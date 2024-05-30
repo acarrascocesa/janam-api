@@ -12,33 +12,32 @@ app.get('/', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-    const secret = '$A[T9D/t)qDAc/6Xpbu#&:d T!?sG2~u*LxW/BA$QV?zz&h)E#'; // Asegúrate de que este coincida con el configurado en WooCommerce
+    const secret = '$A[T9D/t)qDAc/6Xpbu#&:d T!?sG2~u*LxW/BA$QV?zz&h)E#'; // El mismo secreto configurado en WooCommerce
     const signature = req.headers['x-wc-webhook-signature'];
     const hmac = crypto.createHmac('sha256', secret);
     const digest = hmac.update(JSON.stringify(req.body)).digest('base64');
 
+    console.log('Received Signature:', signature);
+    console.log('Calculated Digest:', digest);
+
     if (digest !== signature) {
+        console.log('Signatures do not match');
         return res.status(401).send('Invalid signature');
     }
 
     try {
-        // Datos de ejemplo de un pedido
         const order = req.body;
 
-        // Verificar que line_items es un arreglo
         if (!Array.isArray(order.line_items)) {
             return res.status(400).send('Invalid payload structure: line_items should be an array');
         }
 
-        // Conexión a la base de datos
         const pool = await getConnection();
 
-        // Iterar sobre los artículos del pedido para actualizar el stock
         for (const item of order.line_items) {
-            const sku = item.sku; // Asegúrate de que el SKU esté presente en los artículos
-            const quantity = item.quantity; // Cantidad ordenada
+            const sku = item.sku;
+            const quantity = item.quantity;
 
-            // Actualizar el stock en la base de datos
             await pool.request()
                 .input('sku', sql.VarChar, sku)
                 .input('quantity', sql.Int, quantity)
