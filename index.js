@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const crypto = require('crypto');
 const { getConnection, sql } = require('./dbConfig'); 
 
 const app = express();
@@ -11,6 +12,15 @@ app.get('/', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
+    const secret = '$A[T9D/t)qDAc/6Xpbu#&:d T!?sG2~u*LxW/BA$QV?zz&h)E#'; // Asegúrate de que este coincida con el configurado en WooCommerce
+    const signature = req.headers['x-wc-webhook-signature'];
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = hmac.update(JSON.stringify(req.body)).digest('base64');
+
+    if (digest !== signature) {
+        return res.status(401).send('Invalid signature');
+    }
+
     try {
         // Datos de ejemplo de un pedido
         const order = req.body;
